@@ -1,5 +1,5 @@
 import { Message } from '../types/message';
-import { getApiUrl } from '../config';
+import { getApiUrl, getSecretKey } from '../config';
 import { FullExtensionConfig } from '../extensions';
 
 export interface RecipeParameter {
@@ -47,27 +47,26 @@ export interface CreateRecipeResponse {
 }
 
 export async function createRecipe(request: CreateRecipeRequest): Promise<CreateRecipeResponse> {
-  const url = getApiUrl('/recipe/create');
-  console.log('Creating recipe at:', url);
-  console.log('Request:', JSON.stringify(request, null, 2));
+  const url = getApiUrl('/recipe');
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Failed to create recipe:', {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Secret-Key': getSecretKey(),
+      },
+      body: JSON.stringify(request),
     });
-    throw new Error(`Failed to create recipe: ${response.statusText} (${errorText})`);
-  }
 
-  return response.json();
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Failed to create recipe:', {
+      error,
+      url,
+      requestBodyLength: JSON.stringify(request).length,
+    });
+    return { error: error instanceof Error ? error.message : 'Failed to create recipe', recipe: null };
+  }
 }

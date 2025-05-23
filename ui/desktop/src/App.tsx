@@ -114,19 +114,15 @@ export default function App() {
   }
 
   const setView = (view: View, viewOptions: ViewOptions = {}) => {
-    console.log(`Setting view to: ${view}`, viewOptions);
     setInternalView({ view, viewOptions });
   };
 
   useEffect(() => {
     // Guard against multiple initialization attempts
     if (initAttemptedRef.current) {
-      console.log('Initialization already attempted, skipping...');
       return;
     }
     initAttemptedRef.current = true;
-
-    console.log(`Initializing app with settings v2`);
 
     const urlParams = new URLSearchParams(window.location.search);
     const viewType = urlParams.get('view');
@@ -135,7 +131,6 @@ export default function App() {
     // If we have a specific view type in the URL, use that and skip provider detection
     if (viewType) {
       if (viewType === 'recipeEditor' && recipeConfig) {
-        console.log('Setting view to recipeEditor with config:', recipeConfig);
         setView('recipeEditor', { config: recipeConfig });
       } else {
         setView(viewType as View);
@@ -179,8 +174,6 @@ export default function App() {
           recipeConfig.parameters.length > 0 &&
           !('_paramValues' in recipeConfig)
         ) {
-          console.log('Recipe has parameters, showing parameter collection view');
-
           // Still need to initialize the system even though we're showing parameters first
           const config = window.electron.getConfig();
           const provider = (await read('GOOSE_PROVIDER', false)) ?? config.GOOSE_DEFAULT_PROVIDER;
@@ -192,7 +185,6 @@ export default function App() {
                 getExtensions,
                 addExtension,
               });
-              console.log('System initialized for recipe with parameters');
             } catch (error) {
               console.error('Error in initialization for recipe with parameters:', error);
 
@@ -204,7 +196,6 @@ export default function App() {
               return;
             }
           } else {
-            console.log('Missing required configuration, showing onboarding');
             setView('welcome');
             return;
           }
@@ -238,7 +229,6 @@ export default function App() {
             setView('welcome');
           }
         } else {
-          console.log('Missing required configuration, showing onboarding');
           setView('welcome');
         }
       } catch (error) {
@@ -271,7 +261,6 @@ export default function App() {
   const { chat, setChat } = useChat({ setView, setIsLoadingSession });
 
   useEffect(() => {
-    console.log('Sending reactReady signal to Electron');
     try {
       window.electron.reactReady();
     } catch (error) {
@@ -309,14 +298,12 @@ export default function App() {
 
   // Keyboard shortcut handler
   useEffect(() => {
-    console.log('Setting up keyboard shortcuts');
     const handleKeyDown = (event: KeyboardEvent) => {
       const isMac = window.electron.platform === 'darwin';
       if ((isMac ? event.metaKey : event.ctrlKey) && event.key === 'n') {
         event.preventDefault();
         try {
           const workingDir = window.appConfig.get('GOOSE_WORKING_DIR');
-          console.log(`Creating new chat window with working dir: ${workingDir}`);
           window.electron.createChatWindow(undefined, workingDir as string);
         } catch (error) {
           console.error('Error creating new window:', error);
@@ -331,7 +318,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    console.log('Setting up fatal error handler');
     const handleFatalError = (_event: IpcRendererEvent, errorMessage: string) => {
       console.error('Encountered a fatal error: ', errorMessage);
       // Log additional context that might help diagnose the issue
@@ -347,9 +333,7 @@ export default function App() {
   }, [view, isLoadingSession]); // Add dependencies to provide context in error logs
 
   useEffect(() => {
-    console.log('Setting up view change handler');
     const handleSetView = (_event: IpcRendererEvent, newView: View) => {
-      console.log(`Received view change request to: ${newView}`);
       setView(newView);
     };
 
@@ -377,9 +361,7 @@ export default function App() {
 
   // Add cleanup for session states when view changes
   useEffect(() => {
-    console.log(`View changed to: ${view}`);
     if (view !== 'chat' && view !== 'recipeEditor') {
-      console.log('Not in chat view, clearing loading session state');
       setIsLoadingSession(false);
     }
   }, [view]);
@@ -394,7 +376,6 @@ export default function App() {
     console.log('Setting up extension handler');
     const handleAddExtension = async (_event: IpcRendererEvent, link: string) => {
       try {
-        console.log(`Received add-extension event with link: ${link}`);
         const command = extractCommand(link);
         const remoteUrl = extractRemoteUrl(link);
         const extName = extractExtensionName(link);
@@ -505,11 +486,9 @@ export default function App() {
   // TODO: modify
   const handleConfirm = async () => {
     if (pendingLink) {
-      console.log(`Confirming installation of extension from: ${pendingLink}`);
       setModalVisible(false); // Dismiss modal immediately
       try {
         await addExtensionFromDeepLinkV2(pendingLink, addExtension, setView);
-        console.log('Extension installation successful');
       } catch (error) {
         console.error('Failed to add extension:', error);
         // Consider showing a user-visible error notification here
@@ -518,14 +497,12 @@ export default function App() {
       }
     } else {
       // This case happens when pendingLink was cleared due to blocking
-      console.log('Extension installation blocked by allowlist restrictions');
       setModalVisible(false);
     }
   };
 
   // TODO: modify
   const handleCancel = () => {
-    console.log('Cancelled extension installation.');
     setModalVisible(false);
     setPendingLink(null);
   };
@@ -643,7 +620,6 @@ export default function App() {
               onClose={() => setView('chat')}
               setView={setView}
               onSave={(config) => {
-                console.log('Saving recipe config:', config);
                 window.electron.createChatWindow(
                   undefined,
                   undefined,

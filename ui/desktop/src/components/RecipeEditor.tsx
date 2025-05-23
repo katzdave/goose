@@ -63,7 +63,6 @@ export default function RecipeEditor({ config }: RecipeEditorProps) {
       const loadExtensions = async () => {
         try {
           const extensions = await getExtensions(false); // force refresh to get latest
-          console.log('Loading extensions for recipe editor');
 
           if (extensions && extensions.length > 0) {
             // Map the extensions with the current selection state from recipeExtensions
@@ -82,18 +81,6 @@ export default function RecipeEditor({ config }: RecipeEditorProps) {
       loadExtensions();
     }
   }, [activeSection, getExtensions, recipeExtensions, extensionsLoaded]);
-
-  // Effect for updating extension options when recipeExtensions change
-  useEffect(() => {
-    if (extensionsLoaded && extensionOptions.length > 0) {
-      const updatedOptions = extensionOptions.map((ext) => ({
-        ...ext,
-        enabled: recipeExtensions.includes(ext.name),
-      }));
-      setExtensionOptions(updatedOptions);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipeExtensions, extensionsLoaded]);
 
   // const handleExtensionToggle = (extension: FixedExtensionEntry) => {
   //   console.log('Toggling extension:', extension.name);
@@ -122,12 +109,6 @@ export default function RecipeEditor({ config }: RecipeEditorProps) {
   };
 
   const getCurrentConfig = (): Recipe => {
-    console.log('Creating config with:', {
-      selectedExtensions: recipeExtensions,
-      availableExtensions: extensionOptions,
-      recipeConfig,
-    });
-
     const config = {
       ...recipeConfig,
       title,
@@ -137,20 +118,18 @@ export default function RecipeEditor({ config }: RecipeEditorProps) {
       extensions: recipeExtensions
         .map((name) => {
           const extension = extensionOptions.find((e) => e.name === name);
-          console.log('Looking for extension:', name, 'Found:', extension);
           if (!extension) return null;
 
           // Create a clean copy of the extension configuration
           const cleanExtension = { ...extension };
-          delete cleanExtension.enabled;
+          delete (cleanExtension as any).enabled;
           // Remove legacy envs which could potentially include secrets
           // env_keys will work but rely on the end user having setup those keys themselves
-          delete cleanExtension.envs;
+          delete (cleanExtension as any).envs;
           return cleanExtension;
         })
         .filter(Boolean) as FullExtensionConfig[],
     };
-    console.log('Final config extensions:', config.extensions);
     return config;
   };
 

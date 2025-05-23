@@ -276,7 +276,6 @@ const getVersion = () => {
 };
 
 let [provider, model] = getGooseProvider();
-console.log('[main] Got provider and model:', { provider, model });
 
 let sharingUrl = getSharingUrl();
 
@@ -292,8 +291,6 @@ let appConfig = {
   GOOSE_ALLOWLIST_WARNING: process.env.GOOSE_ALLOWLIST_WARNING === 'true',
   secretKey: generateSecretKey(),
 };
-
-console.log('[main] Created appConfig:', appConfig);
 
 // Track windows by ID
 let windowCounter = 0;
@@ -498,7 +495,6 @@ const createChat = async (
   } else {
     // In production, we need to use a proper file protocol URL with correct base path
     const indexPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`);
-    console.log('Loading production path:', indexPath);
     mainWindow.loadFile(indexPath, {
       search: queryParams ? queryParams.slice(1) : undefined,
     });
@@ -639,18 +635,12 @@ process.on('unhandledRejection', (error) => {
 });
 
 ipcMain.on('react-ready', () => {
-  console.log('React ready event received');
-
   if (pendingDeepLink) {
-    console.log('Processing pending deep link:', pendingDeepLink);
     handleProtocolUrl(pendingDeepLink);
-  } else {
-    console.log('No pending deep link to process');
   }
 
   // We don't need to handle pending deep links here anymore
   // since we're handling them in the window creation flow
-  console.log('[main] React ready - window is prepared for deep links');
 });
 
 // Handle directory chooser
@@ -698,9 +688,7 @@ ipcMain.handle('check-ollama', async () => {
           return resolve(false);
         }
 
-        console.log('Raw stdout from ps|grep command:', output);
         const trimmedOutput = output.trim();
-        console.log('Trimmed stdout:', trimmedOutput);
 
         const isRunning = trimmedOutput.length > 0;
         resolve(isRunning);
@@ -1092,9 +1080,6 @@ app.whenReady().then(async () => {
         const recentDirs = loadRecentDirs();
         dir = recentDirs.length > 0 ? recentDirs[0] : null;
       }
-
-      // Log the recipeConfig for debugging
-      console.log('Creating chat window with recipeConfig:', recipeConfig);
 
       // Pass recipeConfig as part of viewOptions when viewType is recipeEditor
       createChat(app, query, dir, version, resumeSessionId, recipeConfig, viewType);
