@@ -196,7 +196,14 @@ async function handleProtocolUrl(url: string) {
       }
     }
     // Create a new window and ignore the passed-in window
-    createChat(app, undefined, openDir, undefined, undefined, recipeConfig);
+    createChat(
+      app,
+      undefined,
+      openDir || undefined,
+      undefined,
+      undefined,
+      recipeConfig || undefined
+    );
   } else {
     // For other URL types, reuse existing window if available
     const existingWindows = BrowserWindow.getAllWindows();

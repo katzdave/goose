@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Recipe } from '../recipe';
 import { RecipeParametersModal } from './RecipeParametersModal';
 import { initializeSystem } from '../utils/providerUtils';
@@ -14,7 +14,7 @@ export function RecipeParametersView({ config, onClose }: RecipeParametersViewPr
   const [isModalOpen, setIsModalOpen] = useState(true);
   const { read } = useConfig();
 
-  // If no config or no parameters, redirect to the chat view
+  // If no config or no parameters redirect to the chat view
   useEffect(() => {
     if (!config || !config.parameters || config.parameters.length === 0) {
       onClose();
@@ -40,7 +40,7 @@ export function RecipeParametersView({ config, onClose }: RecipeParametersViewPr
         const model = (await read('GOOSE_MODEL', false)) ?? windowConfig.GOOSE_DEFAULT_MODEL;
 
         if (provider && model) {
-          await initializeSystem(provider, model, {
+          await initializeSystem(provider as string, model as string, {
             getExtensions: async (): Promise<FixedExtensionEntry[]> => [],
             addExtension: async (
               _name: string,
@@ -84,7 +84,7 @@ export function RecipeParametersView({ config, onClose }: RecipeParametersViewPr
         const model = (await read('GOOSE_MODEL', false)) ?? windowConfig.GOOSE_DEFAULT_MODEL;
 
         if (provider && model) {
-          await initializeSystem(provider, model, {
+          await initializeSystem(provider as string, model as string, {
             getExtensions: async (): Promise<FixedExtensionEntry[]> => [],
             addExtension: async (
               _name: string,
