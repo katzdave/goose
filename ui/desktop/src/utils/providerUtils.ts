@@ -6,8 +6,8 @@ import {
   initializeBundledExtensions,
   syncBundledExtensions,
   addToAgentOnStartup,
-} from '../components/settings_v2/extensions';
-import { extractExtensionConfig } from '../components/settings_v2/extensions/utils';
+} from '../components/settings/extensions';
+import { extractExtensionConfig } from '../components/settings/extensions/utils';
 import type { ExtensionConfig, FixedExtensionEntry } from '../components/ConfigContext';
 // TODO: remove when removing migration logic
 import { toastService } from '../toasts';
@@ -158,7 +158,6 @@ export const initializeSystem = async (
 
       window.appConfig.set('recipeConfig', processedRecipe);
     }
-
     // Extend the system prompt with desktop-specific information
     const response = await fetch(getApiUrl('/agent/prompt'), {
       method: 'POST',
