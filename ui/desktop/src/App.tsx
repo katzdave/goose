@@ -114,8 +114,12 @@ export default function App() {
   const [extensionConfirmTitle, setExtensionConfirmTitle] = useState<string>('');
   const [{ view, viewOptions }, setInternalView] = useState<ViewConfig>(getInitialView());
 
+  // Reactive state for recipe parameters
+  const [recipeParams, setRecipeParams] = useState<Record<string, string> | null>(null);
+
   const { getExtensions, addExtension, read } = useConfig();
   const initAttemptedRef = useRef(false);
+  const initializationInProgressRef = useRef(false);
 
   function extractCommand(link: string): string {
     const url = new URL(link);
@@ -194,6 +198,13 @@ export default function App() {
     }
 
     const initializeApp = async () => {
+      if (initializationInProgressRef.current) {
+        console.log('Initialization already in progress, skipping...');
+        return;
+      }
+
+      initializationInProgressRef.current = true;
+
       try {
         await initConfig();
         try {
@@ -215,23 +226,30 @@ export default function App() {
         }
 
         // Check if we have a recipe with parameters that need to be filled
-        if (
+        const recipeHasParameters =
           recipeConfig &&
           typeof recipeConfig === 'object' &&
           'parameters' in recipeConfig &&
           Array.isArray(recipeConfig.parameters) &&
-          recipeConfig.parameters.length > 0 &&
-          !('_paramValues' in recipeConfig)
-        ) {
-          const initResult = await initializeProviderAndModel();
-          if (!initResult) {
-            return;
-          }
+          recipeConfig.parameters.length > 0;
 
+        const recipeParametersReady =
+          !recipeHasParameters || '_paramValues' in recipeConfig || recipeParams !== null;
+
+        // Block initialization if recipe has parameters but they're not filled yet
+        if (recipeHasParameters && !recipeParametersReady) {
+          console.log('Recipe has parameters, showing parameter collection UI');
           setView('recipeParameters', { config: recipeConfig as Recipe });
-          return;
+          return; // Block here - don't initialize until parameters are ready
         }
 
+        // If we have collected parameters, update the recipe config
+        if (recipeParams && recipeConfig) {
+          const enhancedConfig = { ...recipeConfig, _paramValues: recipeParams };
+          window.appConfig.set('recipeConfig', enhancedConfig);
+        }
+
+        // Normal initialization path (no parameters needed OR parameters are ready)
         const config = window.electron.getConfig();
         const provider = (await read('GOOSE_PROVIDER', false)) ?? config.GOOSE_DEFAULT_PROVIDER;
         const model = (await read('GOOSE_MODEL', false)) ?? config.GOOSE_DEFAULT_MODEL;
@@ -263,6 +281,7 @@ export default function App() {
         setView('welcome');
       }
       toastService.configure({ silent: false });
+      initializationInProgressRef.current = false;
     };
 
     (async () => {
@@ -274,7 +293,7 @@ export default function App() {
         setFatalError(`${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     })();
-  }, [read, getExtensions, addExtension, initializeProviderAndModel]);
+  }, [read, getExtensions, addExtension, initializeProviderAndModel, recipeParams]);
 
   const [isGoosehintsModalOpen, setIsGoosehintsModalOpen] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
@@ -616,11 +635,19 @@ export default function App() {
           )}
           {view === 'recipeParameters' && (
             <RecipeParametersView
-              onClose={() => setView('chat')}
               config={
                 (viewOptions?.config as Recipe) ||
                 (window.electron.getConfig().recipeConfig as Recipe | undefined)
               }
+              onSubmit={(paramValues: Record<string, string>) => {
+                console.log('Parameters submitted:', paramValues);
+                setRecipeParams(paramValues);
+              }}
+              onCancel={() => {
+                console.log('Parameters cancelled');
+                // Set empty parameters to proceed without them
+                setRecipeParams({});
+              }}
             />
           )}
         </div>
