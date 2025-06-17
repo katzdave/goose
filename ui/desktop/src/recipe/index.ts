@@ -2,6 +2,28 @@ import { Message } from '../types/message';
 import { getApiUrl } from '../config';
 import { FullExtensionConfig } from '../extensions';
 
+export enum RecipeParameterRequirement {
+  Required = 'required',
+  Optional = 'optional',
+  UserPrompt = 'user_prompt'
+}
+
+export enum RecipeParameterInputType {
+  String = 'string',
+  Number = 'number',
+  Boolean = 'boolean',
+  Date = 'date',
+  File = 'file'
+}
+
+export interface RecipeParameter {
+  key: string;
+  input_type: RecipeParameterInputType;
+  requirement: RecipeParameterRequirement;
+  description: string;
+  default?: string;
+}
+
 export interface Recipe {
   title: string;
   description: string;
@@ -17,6 +39,7 @@ export interface Recipe {
   context?: string[];
   profile?: string;
   mcps?: number;
+  parameters?: RecipeParameter[];
 }
 
 export interface CreateRecipeRequest {

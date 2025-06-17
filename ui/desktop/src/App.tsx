@@ -30,6 +30,7 @@ import { backupConfig, initConfig, readAllConfig } from './api/sdk.gen';
 import PermissionSettingsView from './components/settings/permission/PermissionSetting';
 
 import { type SessionDetails } from './sessions';
+import RecipeParametersModal from './components/RecipeParametersModal';
 
 export type View =
   | 'welcome'
@@ -111,6 +112,8 @@ export default function App() {
   const [extensionConfirmLabel, setExtensionConfirmLabel] = useState<string>('');
   const [extensionConfirmTitle, setExtensionConfirmTitle] = useState<string>('');
   const [{ view, viewOptions }, setInternalView] = useState<ViewConfig>(getInitialView());
+  const [isRecipeParametersModalOpen, setIsRecipeParametersModalOpen] = useState(false);
+  const [recipeParameters, setRecipeParameters] = useState<Record<string, string>>({});
 
   const { getExtensions, addExtension, read } = useConfig();
   const initAttemptedRef = useRef(false);
@@ -143,7 +146,7 @@ export default function App() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const viewType = urlParams.get('view');
-    const recipeConfig = window.appConfig.get('recipeConfig');
+    const recipeConfig = window.appConfig.get('recipeConfig') as Recipe | null;
 
     if (viewType) {
       if (viewType === 'recipeEditor' && recipeConfig) {
@@ -181,18 +184,22 @@ export default function App() {
         const model = (await read('GOOSE_MODEL', false)) ?? config.GOOSE_DEFAULT_MODEL;
 
         if (provider && model) {
-          setView('chat');
-          try {
-            await initializeSystem(provider as string, model as string, {
-              getExtensions,
-              addExtension,
-            });
-          } catch (error) {
-            console.error('Error in initialization:', error);
-            if (error instanceof MalformedConfigError) {
-              throw error;
+          if (recipeConfig?.parameters && recipeConfig.parameters.length > 0) {
+            setIsRecipeParametersModalOpen(true);
+          } else {
+            setView('chat');
+            try {
+              await initializeSystem(provider as string, model as string, {
+                getExtensions,
+                addExtension,
+              });
+            } catch (error) {
+              console.error('Error in initialization:', error);
+              if (error instanceof MalformedConfigError) {
+                throw error;
+              }
+              setView('welcome');
             }
-            setView('welcome');
           }
         } else {
           console.log('Missing required configuration, showing onboarding');
@@ -456,6 +463,12 @@ export default function App() {
     setPendingLink(null);
   };
 
+  const handleRecipeParametersSubmit = (parameters: Record<string, string>) => {
+    setRecipeParameters(parameters);
+    setIsRecipeParametersModalOpen(false);
+    setView('chat');
+  };
+
   if (fatalError) {
     return <ErrorUI error={new Error(fatalError)} />;
   }
@@ -492,6 +505,14 @@ export default function App() {
           title={extensionConfirmTitle}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
+        />
+      )}
+      {isRecipeParametersModalOpen && (
+        <RecipeParametersModal
+          isOpen={isRecipeParametersModalOpen}
+          onClose={() => setIsRecipeParametersModalOpen(false)}
+          recipe={window.appConfig.get('recipeConfig') as Recipe}
+          onParametersSubmit={handleRecipeParametersSubmit}
         />
       )}
       <div className="relative w-screen h-screen overflow-hidden bg-bgApp flex flex-col">
